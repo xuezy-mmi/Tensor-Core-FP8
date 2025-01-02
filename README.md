@@ -1,4 +1,4 @@
-# GEMM-Tensor-Core-FP8
+# Tensor-Core-FP8-Kernel
 
 NVIDIA released MMA instructions for FP8 (e4m3 and e5m2) in PTX 8.4.
 
