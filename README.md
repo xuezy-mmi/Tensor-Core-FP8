@@ -7,8 +7,7 @@ However, there are few open-source kernels that support FP8, except for Transfor
 I will gradually implement GEMM, GEMV, SpMM, SpMV and other CUDA kernels based on FP8-MMA Instruction in this project.
 
 
-|kernel|Block Size| layout |
-|------|--------|------|
-|GEMM  | 张三   | 25   |
-| 2    | 李四   | 30   |
-| 3    | 王五   | 28   |
+|kernel|Block Size| layout |Precision|
+|------|--------|------|------|
+|GEMM  |128x128x64|row-col|e4m3*e4m3=fp32|
+
