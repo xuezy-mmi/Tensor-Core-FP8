@@ -36,11 +36,14 @@ $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cu $(INC_DIR)/%.cuh
 gemm: $(OBJ_DIR)/gemm_main.o $(OBJ_DIR)/gemm.o
 	@$(NVCC) $(NVCC_FLAGS) $^  -o $(OUT_DIR)/$@
 
-gemv: $(OBJ_DIR)/gemv_main.o $(OBJ_DIR)/gemv_main.o
-	@$(NVCC) $(NVCC_FLAGS) $^  -o $(OUT_DIR)/$@
+baseline:
+	@$(NVCC) matmul-fp8-v0.cu -o baseline -arch=compute_90a -code=sm_90a --ptxas-options=-v
 
+gemm_test:
+	$(OUT_DIR)/gemm 128 128 128 2 1 0 0
 gemm_run:
-	$(OUT_DIR)/gemm 4096 4096 4096 2 0 0
+	$(OUT_DIR)/gemm 4096 4096 4096 1 0 0 0
+
 
 clean:
 	@rm -f $(OBJ_DIR)/*
