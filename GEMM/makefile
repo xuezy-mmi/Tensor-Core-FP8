@@ -1,5 +1,5 @@
 NVCC = /usr/local/cuda-12.4/bin/nvcc
-NVCC_FLAGS = -std=c++11 -arch=sm_90 -lineinfo -lcublas --ptxas-options=-v
+NVCC_FLAGS = -std=c++11 -arch=sm_90 -lineinfo --ptxas-options=-v
 
 ##################################################################
 
@@ -36,15 +36,22 @@ $(OBJ_DIR)/%.o : $(SRC_DIR)/%.cu $(INC_DIR)/%.cuh
 gemm: $(OBJ_DIR)/gemm_main.o $(OBJ_DIR)/gemm.o
 	@$(NVCC) $(NVCC_FLAGS) $^  -o $(OUT_DIR)/$@
 
+cublas:
+	@$(NVCC) -lcublasLt $(SRC_DIR)/cublas.cu -o $(OUT_DIR)/cublas
+#  -Xcompiler -Wall
+cublas_run:
+	$(OUT_DIR)/cublas 100
+
 baseline:
-	@$(NVCC) matmul-fp8-v0.cu -o baseline -arch=compute_90a -code=sm_90a --ptxas-options=-v
+	@$(NVCC) $(SRC_DIR)/matmul-fp8-v0.cu -o $(OUT_DIR)/baseline -arch=compute_90a -code=sm_90a
 
 gemm_test:
 	$(OUT_DIR)/gemm 128 128 128 2 1 0 0
 gemm_run:
 	$(OUT_DIR)/gemm 4096 4096 4096 1 0 0 0
 
-
+baseline_run:
+	$(OUT_DIR)/baseline
 clean:
 	@rm -f $(OBJ_DIR)/*
 	@rm -f $(OUT_DIR)/*

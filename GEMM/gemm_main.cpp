@@ -7,7 +7,7 @@
 #include <random>
 #include <assert.h>
 #include <algorithm>
-
+// #include <chrono>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <cuda_profiler_api.h>
@@ -17,10 +17,12 @@
 #include <mma.h>
 
 #include "./include/bm_test_utils.h"
+// #include "./include/helper.h"
 #include "./include/gemm.cuh"
+// #include "./include/cublas.cuh"
 
 using namespace std;
-#define repeat 200
+#define repeat 100
 #define warmup 20
 
 template <typename AType, typename BType, typename CType>
@@ -61,7 +63,7 @@ void BmFN(int M, int K, int N, int kernel, bool func, bool record){
     checkCuda(cudaMemcpy(d_A_Value, h_A_Value, (M*K) * sizeof(AType), cudaMemcpyHostToDevice));
     checkCuda(cudaMemcpy(d_B_Value, h_B_Value, (N*K) * sizeof(BType), cudaMemcpyHostToDevice));
     
-    if(kernel % 2 == 1){// execute gemm
+    if(kernel == 1 || kernel == 3 || kernel == 5 || kernel == 7){// execute gemm
         float total_msec = 0.0;
         double Gperf = 0;
         for(int i = 0; i < repeat+warmup; i++){
@@ -107,7 +109,7 @@ void BmFN(int M, int K, int N, int kernel, bool func, bool record){
             outFile.close();
         }
     }
-    else if(kernel % 2 == 0){// execute gemm
+    else if(kernel == 2 || kernel == 4 || kernel == 6 || kernel == 8){// execute gemm
         float total_msec = 0.0;
         double Gperf = 0;
         for(int i = 0; i < repeat+warmup; i++){
@@ -191,6 +193,8 @@ void BmFN(int M, int K, int N, int kernel, bool func, bool record){
     printf("end BmFN\n");
 }
 
+
+
 void usage(void){
     printf("!!!!!!!\n");
     printf("Input Help!\n");
@@ -248,6 +252,10 @@ int main(int argc, char **argv){
         else if(kernel == 8){
             printf("e5m2 * e4m3 = fp32\n");
             // BmFN<__nv_fp8_e5m2, __nv_fp8_e4m3, float>(dimM, dimK, dimN, kernel, verify, record);
+        }
+        else if(kernel == 9){
+            printf("cuBLAS: e5m2 * e4m3 + bf16 = fp8\n");
+            BmFN<__nv_fp8_e5m2, __nv_fp8_e4m3, float>(dimM, dimK, dimN, kernel, verify, record);
         }
         else{
             printf("unsupported kernel\n");

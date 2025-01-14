@@ -71,15 +71,15 @@ __global__ void GEMM_e4m3_e4m3_o32_stage2_row_col(
     // block_size = 128 * 64 
     // thred num = 128 
     // each thread load = 128 * 64 / 128 = 64 fp8 = 4 float4
-    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(e4m3);
-    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(e4m3);
-    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(e4m3);
-    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(e4m3);
+    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(char);
+    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(char);
     
-    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(e4m3);
-    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(e4m3);
-    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(e4m3);
-    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(e4m3);
+    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(char);
+    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(char);
 
     int gmem_a_m = bx * Block_M + smem_a_m;
     int gmem_a_k = smem_a_k;
@@ -113,7 +113,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage2_row_col(
 
     int warp_x = wid % 2;//0 1 0 1
     int warp_y = wid / 2;//0 0 1 1
-    #pragma unroll 16
+    #pragma unroll 32
     for(int bk = 1; bk < K/Block_K; bk++){
         int sel_com = (bk % 2) ^ 1; // 0 1 0 1
         int sel_mem = bk % 2; // 1 0 1 0
@@ -121,41 +121,41 @@ __global__ void GEMM_e4m3_e4m3_o32_stage2_row_col(
         gmem_b_addr += Block_K;
         
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr        ]));
+            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr        ]));
+            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
         
         float4 * smem_a_sel = reinterpret_cast<float4 *>(smem_a + sel_com * smem_a_offset + warp_x * 64 * (Block_K+APAD));
         float4 * smem_b_sel = reinterpret_cast<float4 *>(smem_b + sel_com * smem_b_offset + warp_y * 64 * (Block_K+BPAD));
-        matrix_a_fragment[0] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 0 ) * (4+0));
-        matrix_a_fragment[1] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 8 ) * (4+0));
-        matrix_a_fragment[2] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 16) * (4+0));
-        matrix_a_fragment[3] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 24) * (4+0));
-        matrix_a_fragment[4] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 32) * (4+0));
-        matrix_a_fragment[5] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 40) * (4+0));
-        matrix_a_fragment[6] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 48) * (4+0));
-        matrix_a_fragment[7] = *(smem_a_sel + (lane_id % 4) + (lane_id / 4 + 56) * (4+0));
-        matrix_b_fragment[0] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 0 ) * (4+0));
-        matrix_b_fragment[1] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 8 ) * (4+0));
-        matrix_b_fragment[2] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 16) * (4+0));
-        matrix_b_fragment[3] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 24) * (4+0));
-        matrix_b_fragment[4] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 32) * (4+0));
-        matrix_b_fragment[5] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 40) * (4+0));
-        matrix_b_fragment[6] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 48) * (4+0));
-        matrix_b_fragment[7] = *(smem_b_sel + (lane_id % 4) + (lane_id / 4 + 56) * (4+0));
+        matrix_a_fragment[0] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 0 ) * (4+0));
+        matrix_a_fragment[1] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 8 ) * (4+0));
+        matrix_a_fragment[2] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 16) * (4+0));
+        matrix_a_fragment[3] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 24) * (4+0));
+        matrix_a_fragment[4] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 32) * (4+0));
+        matrix_a_fragment[5] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 40) * (4+0));
+        matrix_a_fragment[6] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 48) * (4+0));
+        matrix_a_fragment[7] = *(smem_a_sel + (lane_id % 4) + (int)(lane_id / 4 + 56) * (4+0));
+        matrix_b_fragment[0] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 0 ) * (4+0));
+        matrix_b_fragment[1] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 8 ) * (4+0));
+        matrix_b_fragment[2] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 16) * (4+0));
+        matrix_b_fragment[3] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 24) * (4+0));
+        matrix_b_fragment[4] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 32) * (4+0));
+        matrix_b_fragment[5] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 40) * (4+0));
+        matrix_b_fragment[6] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 48) * (4+0));
+        matrix_b_fragment[7] = *(smem_b_sel + (lane_id % 4) + (int)(lane_id / 4 + 56) * (4+0));
 
         int * a_fragment_int = reinterpret_cast<int *>(matrix_a_fragment);// 8 float4 --> 32 reg
         int * b_fragment_int = reinterpret_cast<int *>(matrix_b_fragment);// 8 float4 --> 32 reg
@@ -175,6 +175,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage2_row_col(
                     "r"(a_fragment_int[1 + 8 * i]), "r"(a_fragment_int[5 + 8 * i]),
                     "r"(b_fragment_int[0 + 4 * j]), "r"(b_fragment_int[1 + 4 * j])
                 );
+                __syncthreads();
                 asm ("mma.sync.aligned.m16n8k32.row.col.f32.e4m3.e4m3.f32 \t"
                     "{%0, %1, %2, %3}, \t"
                     "{%4, %5, %6, %7}, \t"
@@ -231,6 +232,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage2_row_col(
                 "r"(a_fragment_int[1 + 8 * i]), "r"(a_fragment_int[5 + 8 * i]),
                 "r"(b_fragment_int[0 + 4 * j]), "r"(b_fragment_int[1 + 4 * j])
             );
+            __syncthreads();
             asm ("mma.sync.aligned.m16n8k32.row.col.f32.e4m3.e4m3.f32 \t"
                 "{%0, %1, %2, %3}, \t"
                 "{%4, %5, %6, %7}, \t"
@@ -244,7 +246,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage2_row_col(
             );
         }
     }// end mma compute
-    __syncthreads();
+    // __syncthreads();
     int store_gmem_m = bx * Block_M + warp_x * 64;
     int store_gmem_n = by * Block_N + warp_y * 64;
     float2 * output_ = reinterpret_cast<float2 *>(Output_Value + (store_gmem_m + (int)(lane_id / 4)) * N + store_gmem_n + ((lane_id % 4) * 2));
@@ -330,15 +332,15 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
     // block_size = 128 * 64 
     // thred num = 128 
     // each thread load = 128 * 64 / 128 = 64 fp8 = 4 float4
-    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(e4m3);
-    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(e4m3);
-    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(e4m3);
-    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(e4m3);
+    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(char);
+    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(char);
     
-    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(e4m3);
-    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(e4m3);
-    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(e4m3);
-    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(e4m3);
+    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(char);
+    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(char);
 
     int gmem_a_m = bx * Block_M + smem_a_m;
     int gmem_a_k = smem_a_k;
@@ -369,43 +371,43 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
     gmem_a_addr += Block_K;
     gmem_b_addr += Block_K;
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr0+smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr        ]));
+        : "r"(smem_a_addr0+smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr1+smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+        : "r"(smem_a_addr1+smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr2+smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+        : "r"(smem_a_addr2+smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr3+smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+        : "r"(smem_a_addr3+smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr0+smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr        ]));
+        : "r"(smem_b_addr0+smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr1+smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+        : "r"(smem_b_addr1+smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr2+smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+        : "r"(smem_b_addr2+smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr3+smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+        : "r"(smem_b_addr3+smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
 
     // stage 3
     gmem_a_addr += Block_K;
     gmem_b_addr += Block_K;
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr0+2*smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr        ]));
+        : "r"(smem_a_addr0+2*smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr1+2*smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+        : "r"(smem_a_addr1+2*smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr2+2*smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+        : "r"(smem_a_addr2+2*smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_a_addr3+2*smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+        : "r"(smem_a_addr3+2*smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr0+2*smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr        ]));
+        : "r"(smem_b_addr0+2*smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr1+2*smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+        : "r"(smem_b_addr1+2*smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr2+2*smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+        : "r"(smem_b_addr2+2*smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
     asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-        : "r"(smem_b_addr3+2*smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+        : "r"(smem_b_addr3+2*smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
 
     asm ("cp.async.commit_group;\n" ::);
     asm ("cp.async.wait_group 0;\n" ::);
@@ -413,7 +415,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
 
     int warp_x = wid % 2;//0 1 0 1
     int warp_y = wid / 2;//0 0 1 1
-    #pragma unroll 16
+    #pragma unroll 32
     for(int bk = 3; bk < K/Block_K; bk++){
         int sel_mem = bk % 4; // 3 0 1 2 3 0 1
         int sel_com = (bk - 3) % 4; // 0 1 2 3 0 1 2 3
@@ -421,22 +423,22 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
         gmem_b_addr += Block_K;
         
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr        ]));
+            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr        ]));
+            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
         
         float4 * smem_a_sel = reinterpret_cast<float4 *>(smem_a + sel_com * smem_a_offset + warp_x * 64 * (Block_K+APAD));
         float4 * smem_b_sel = reinterpret_cast<float4 *>(smem_b + sel_com * smem_b_offset + warp_y * 64 * (Block_K+BPAD));
@@ -475,6 +477,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
                     "r"(a_fragment_int[1 + 8 * i]), "r"(a_fragment_int[5 + 8 * i]),
                     "r"(b_fragment_int[0 + 4 * j]), "r"(b_fragment_int[1 + 4 * j])
                 );
+                // __syncthreads();
                 asm ("mma.sync.aligned.m16n8k32.row.col.f32.e4m3.e4m3.f32 \t"
                     "{%0, %1, %2, %3}, \t"
                     "{%4, %5, %6, %7}, \t"
@@ -531,6 +534,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
                 "r"(a_fragment_int[1 + 8 * i]), "r"(a_fragment_int[5 + 8 * i]),
                 "r"(b_fragment_int[0 + 4 * j]), "r"(b_fragment_int[1 + 4 * j])
             );
+            // __syncthreads();
             asm ("mma.sync.aligned.m16n8k32.row.col.f32.e4m3.e4m3.f32 \t"
                 "{%0, %1, %2, %3}, \t"
                 "{%4, %5, %6, %7}, \t"
@@ -583,6 +587,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
                 "r"(a_fragment_int[1 + 8 * i]), "r"(a_fragment_int[5 + 8 * i]),
                 "r"(b_fragment_int[0 + 4 * j]), "r"(b_fragment_int[1 + 4 * j])
             );
+            // __syncthreads();
             asm ("mma.sync.aligned.m16n8k32.row.col.f32.e4m3.e4m3.f32 \t"
                 "{%0, %1, %2, %3}, \t"
                 "{%4, %5, %6, %7}, \t"
@@ -635,6 +640,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
                 "r"(a_fragment_int[1 + 8 * i]), "r"(a_fragment_int[5 + 8 * i]),
                 "r"(b_fragment_int[0 + 4 * j]), "r"(b_fragment_int[1 + 4 * j])
             );
+            // __syncthreads();
             asm ("mma.sync.aligned.m16n8k32.row.col.f32.e4m3.e4m3.f32 \t"
                 "{%0, %1, %2, %3}, \t"
                 "{%4, %5, %6, %7}, \t"
@@ -650,7 +656,7 @@ __global__ void GEMM_e4m3_e4m3_o32_stage4_row_col(
     }// end mma compute
     __syncthreads();
 
-    float2 * output_ = reinterpret_cast<float2 *>(Output_Value + (bx * Block_M + warp_x * 64 + (int)(lane_id / 4)) * N + by * Block_N + warp_y * 64 + (int)((lane_id % 4) * 2));
+    float2 * output_ = reinterpret_cast<float2 *>(Output_Value + (bx * Block_M + warp_x * 64 + (int)(lane_id / 4)) * N + by * Block_N + warp_y * 64 + ((lane_id % 4) * 2));
     float2 * output_fragment_ = reinterpret_cast<float2 *>(output_fragment);// 128 reg --> 64 float2
     #pragma unroll
     for(int i = 0; i < 4; i++){
@@ -670,10 +676,10 @@ cudaError_t GEMMex4(
     const int Block_M = 128, Block_N = 128, Block_K = 64;
     dim3 block_dim(128,1,1);
 	dim3 grid_dim(ceil(static_cast<float>(M) / Block_M), ceil(static_cast<float>(N) / Block_N), 1);
-    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(e4m3);
-
+    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(char);
     // cudaFuncSetAttribute(GEMM_e4m3_e4m3_o32_stage4_row_col,
         // cudaFuncAttributeMaxDynamicSharedMemorySize, 233472);
+
     GEMM_e4m3_e4m3_o32_stage4_row_col<<<grid_dim, block_dim>>>(
         M, K, N, A_Value, B_Value, Output_Value);
 	return cudaGetLastError();
@@ -721,22 +727,22 @@ __global__ void GEMM_e5m2_e5m2_o32_stage2_row_col(
     float4 matrix_b_fragment[8];// 8 float4 = 32 reg
     float output_fragment[128];// 4(m) * 8(n) * 4(one tile) = 128 float
 
-    int smem_a_m = (tid / 4) * 4;
+    int smem_a_m = (int)(tid / 4) * 4;
     int smem_a_k = (tid % 4) * 16;
     int smem_b_k = (tid % 4) * 16;
-    int smem_b_n = (tid / 4) * 4;
+    int smem_b_n = (int)(tid / 4) * 4;
     int smem_a_base_addr = __cvta_generic_to_shared(smem_a);
     int smem_b_base_addr = __cvta_generic_to_shared(smem_b);
 
-    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(e5m2);
-    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(e5m2);
-    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(e5m2);
-    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(e5m2);
+    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(char);
+    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(char);
     
-    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(e5m2);
-    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(e5m2);
-    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(e5m2);
-    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(e5m2);
+    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(char);
+    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(char);
 
     int gmem_a_m = bx * Block_M + smem_a_m;
     int gmem_a_k = smem_a_k;
@@ -778,22 +784,22 @@ __global__ void GEMM_e5m2_e5m2_o32_stage2_row_col(
         gmem_b_addr += Block_K;
         
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr        ]));
+            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr        ]));
+            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
         
         float4 * smem_a_sel = reinterpret_cast<float4 *>(smem_a + sel * smem_a_offset + warp_x * (int)(smem_a_offset/2));
         float4 * smem_b_sel = reinterpret_cast<float4 *>(smem_b + sel * smem_b_offset + warp_y * (int)(smem_b_offset/2));
@@ -983,15 +989,15 @@ __global__ void GEMM_e4m3_e5m2_o32_stage2_row_col(
     // block_size = 128 * 64 
     // thred num = 128 
     // each thread load = 128 * 64 / 128 = 64 fp8 = 4 float4
-    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(e4m3);
-    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(e4m3);
-    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(e4m3);
-    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(e4m3);
+    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(char);
+    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(char);
     
-    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(e5m2);
-    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(e5m2);
-    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(e5m2);
-    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(e5m2);
+    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(char);
+    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(char);
 
     int gmem_a_m = bx * Block_M + smem_a_m;
     int gmem_a_k = smem_a_k;
@@ -1033,22 +1039,22 @@ __global__ void GEMM_e4m3_e5m2_o32_stage2_row_col(
         gmem_b_addr += Block_K;
         
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr        ]));
+            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(e4m3)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr        ]));
+            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(e5m2)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
         
         float4 * smem_a_sel = reinterpret_cast<float4 *>(smem_a + sel * smem_a_offset + warp_x * (smem_a_offset >> 1));
         float4 * smem_b_sel = reinterpret_cast<float4 *>(smem_b + sel * smem_b_offset + warp_y * (smem_b_offset >> 1));
@@ -1238,15 +1244,15 @@ __global__ void GEMM_e5m2_e4m3_o32_stage2_row_col(
     // block_size = 128 * 64 
     // thred num = 128 
     // each thread load = 128 * 64 / 128 = 64 fp8 = 4 float4
-    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(e5m2);
-    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(e5m2);
-    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(e5m2);
-    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(e5m2);
+    int smem_a_addr0 = smem_a_base_addr + (smem_a_m * (Block_K + APAD) + smem_a_k) * sizeof(char);
+    int smem_a_addr1 = smem_a_addr0 + 1 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr2 = smem_a_addr0 + 2 * (Block_K + APAD) * sizeof(char);
+    int smem_a_addr3 = smem_a_addr0 + 3 * (Block_K + APAD) * sizeof(char);
     
-    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(e4m3);
-    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(e4m3);
-    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(e4m3);
-    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(e4m3);
+    int smem_b_addr0 = smem_b_base_addr + (smem_b_n * (Block_K + BPAD) + smem_b_k) * sizeof(char);
+    int smem_b_addr1 = smem_b_addr0 + 1 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr2 = smem_b_addr0 + 2 * (Block_K + BPAD) * sizeof(char);
+    int smem_b_addr3 = smem_b_addr0 + 3 * (Block_K + BPAD) * sizeof(char);
 
     int gmem_a_m = bx * Block_M + smem_a_m;
     int gmem_a_k = smem_a_k;
@@ -1288,22 +1294,22 @@ __global__ void GEMM_e5m2_e4m3_o32_stage2_row_col(
         gmem_b_addr += Block_K;
         
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr        ]));
+            : "r"(smem_a_addr0 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr + 1 * K]));
+            : "r"(smem_a_addr1 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr + 2 * K]));
+            : "r"(smem_a_addr2 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(e5m2)), "l"(&A_Value[gmem_a_addr + 3 * K]));
+            : "r"(smem_a_addr3 + sel_mem * smem_a_offset * (int)sizeof(char)), "l"(&A_Value[gmem_a_addr + 3 * K]));
 
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr        ]));
+            : "r"(smem_b_addr0 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr        ]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 1 * K]));
+            : "r"(smem_b_addr1 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 1 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 2 * K]));
+            : "r"(smem_b_addr2 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 2 * K]));
         asm ("cp.async.ca.shared.global [%0], [%1], 16;\n" :
-            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(e4m3)), "l"(&B_Value[gmem_b_addr + 3 * K]));
+            : "r"(smem_b_addr3 + sel_mem * smem_b_offset * (int)sizeof(char)), "l"(&B_Value[gmem_b_addr + 3 * K]));
         
         float4 * smem_a_sel = reinterpret_cast<float4 *>(smem_a + sel * smem_a_offset + warp_x * (smem_a_offset >> 1));
         float4 * smem_b_sel = reinterpret_cast<float4 *>(smem_b + sel * smem_b_offset + warp_y * (smem_b_offset >> 1));
@@ -1464,10 +1470,8 @@ cudaError_t GEMMex4(
     const int Block_M = 128, Block_N = 128, Block_K = 64;
     dim3 block_dim(128,1,1);
 	dim3 grid_dim(ceil(static_cast<float>(M) / Block_M), ceil(static_cast<float>(N) / Block_N), 1);
-    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(e4m3);
+    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(char);
 
-    // cudaFuncSetAttribute(GEMM_e4m3_e4m3_o32_stage4_row_col,
-        // cudaFuncAttributeMaxDynamicSharedMemorySize, 233472);
     GEMM_e5m2_e5m2_o32_stage4_row_col<<<grid_dim, block_dim>>>(
         M, K, N, A_Value, B_Value, Output_Value);
 	return cudaGetLastError();
@@ -1497,10 +1501,8 @@ cudaError_t GEMMex4(
     const int Block_M = 128, Block_N = 128, Block_K = 64;
     dim3 block_dim(128,1,1);
 	dim3 grid_dim(ceil(static_cast<float>(M) / Block_M), ceil(static_cast<float>(N) / Block_N), 1);
-    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(e4m3);
+    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(char);
 
-    // cudaFuncSetAttribute(GEMM_e4m3_e4m3_o32_stage4_row_col,
-        // cudaFuncAttributeMaxDynamicSharedMemorySize, 233472);
     GEMM_e4m3_e5m2_o32_stage4_row_col<<<grid_dim, block_dim>>>(
         M, K, N, A_Value, B_Value, Output_Value);
 	return cudaGetLastError();
@@ -1530,10 +1532,8 @@ cudaError_t GEMMex4(
     const int Block_M = 128, Block_N = 128, Block_K = 64;
     dim3 block_dim(128,1,1);
 	dim3 grid_dim(ceil(static_cast<float>(M) / Block_M), ceil(static_cast<float>(N) / Block_N), 1);
-    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(e4m3);
+    // unsigned int dsmem = 4 * (Block_M * (Block_K + 0) + Block_N * (Block_K + 0)) * sizeof(char);
 
-    // cudaFuncSetAttribute(GEMM_e4m3_e4m3_o32_stage4_row_col,
-        // cudaFuncAttributeMaxDynamicSharedMemorySize, 233472);
     GEMM_e5m2_e4m3_o32_stage4_row_col<<<grid_dim, block_dim>>>(
         M, K, N, A_Value, B_Value, Output_Value);
 	return cudaGetLastError();
