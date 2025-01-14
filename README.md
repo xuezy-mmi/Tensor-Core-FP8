@@ -14,7 +14,14 @@ I will gradually implement GEMM, GEMV, SpMM, SpMV and other CUDA kernels based o
 | Shared Memory/SM |    128 KB    |    228 KB   |
 |        SMs       |      128     |     114     |
 
-|kernel|Block Size| layout |Precision|
-|------|--------|------|------|
-|GEMM  |128x128x64|row-col|e4m3*e4m3=fp32|
+|kernel|Block Size| layout |Precision| Pipeline Stage |
+|------|--------|------|------|------|
+|GEMM  |128x128x64|row-col|e4m3*e4m3=fp32|2-stage|
+|GEMM  |128x128x64|row-col|e5m2*e5m2=fp32|2-stage|
+|GEMM  |128x128x64|row-col|e4m3*e5m2=fp32|2-stage|
+|GEMM  |128x128x64|row-col|e5m2*e4m3=fp32|2-stage|
+|GEMM  |128x128x64|row-col|e4m3*e4m3=fp32|4-stage|
+|GEMM  |128x128x64|row-col|e5m2*e5m2=fp32|4-stage|
+|GEMM  |128x128x64|row-col|e4m3*e5m2=fp32|4-stage|
+|GEMM  |128x128x64|row-col|e5m2*e4m3=fp32|4-stage|
 
